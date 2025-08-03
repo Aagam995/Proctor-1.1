@@ -39,7 +39,7 @@ function uploadImage(dataURL) {
   const formData = new FormData();
   formData.append("image", dataURL);
 
-  fetch("https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbw6NipMva2B1hJA6DWh8lyLGU4ajod3fexGlS6KaH4hGWxJ51zdkDUR8vLc8NzFSo6o7A/exec", {
     method: "POST",
     body: formData
   })
