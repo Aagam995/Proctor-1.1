@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Proctoring Camera</title>
+  <style>
+    body { margin: 0; }
+    video, canvas { display: none; }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay playsinline width="640" height="480"></video>
+  <canvas id="canvas" width="640" height="480"></canvas>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw6NipMva2B1hJA6DWh8lyLGU4ajod3fexGlS6KaH4hGWxJ51zdkDUR8vLc8NzFSo6o7A/exec"; // 🔁 Replace this
+
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        console.error('Error accessing webcam:', err);
+      }
+    }
+
+    function captureImage() {
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataURL = canvas.toDataURL('image/jpeg');
+
+      console.log("Captured at", new Date().toLocaleTimeString());
+      uploadImage(dataURL);
+    }
+
+    function uploadImage(dataURL) {
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ image: dataURL })
+      })
+      .then(res => res.text())
+      .then(result => console.log("Uploaded:", result))
+      .catch(err => console.error("Upload failed:", err));
+    }
+
+    function startCapturing(interval = 10000) { // Default: 3 minutes
+      captureImage(); // First one
+      setInterval(captureImage, interval);
+    }
+
+    // Init
+    startCamera().then(() => {
+      setTimeout(() => {
+        startCapturing(); // Delay to ensure video is ready
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
