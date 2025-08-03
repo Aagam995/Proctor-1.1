@@ -1,65 +1,54 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Proctoring Camera</title>
+  <meta charset="UTF-8">
+  <title>Webcam Proctor</title>
   <style>
-    body { margin: 0; }
-    video, canvas { display: none; }
+    body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    video { width: 100%; height: auto; }
   </style>
 </head>
 <body>
-  <video id="video" autoplay playsinline width="640" height="480"></video>
-  <canvas id="canvas" width="640" height="480"></canvas>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas" style="display: none;"></canvas>
 
   <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwJaapr5Gd7higJpJ_uZcvHozWCytFjcN3NA59TxjpUWYRCalOHDJnnhNeLWNUb5f_xnA/exec";
+
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
 
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw6NipMva2B1hJA6DWh8lyLGU4ajod3fexGlS6KaH4hGWxJ51zdkDUR8vLc8NzFSo6o7A/exec"; // 🔁 Replace this
-
-    async function startCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    // Ask for webcam
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(stream => {
         video.srcObject = stream;
-      } catch (err) {
-        console.error('Error accessing webcam:', err);
-      }
-    }
+      })
+      .catch(err => {
+        console.error("Webcam access denied:", err);
+      });
 
-    function captureImage() {
+    // Function to capture and upload
+    function captureAndUpload() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataURL = canvas.toDataURL('image/jpeg');
+      const dataURL = canvas.toDataURL("image/png");
 
-      console.log("Captured at", new Date().toLocaleTimeString());
-      uploadImage(dataURL);
+      fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({ image: dataURL }),
+        headers: {
+          "Content-Type": "application/json"
+        }
+      })
+      .then(res => res.json())
+      .then(data => console.log("Uploaded:", data))
+      .catch(err => console.error("Upload failed:", err));
     }
 
-function uploadImage(dataURL) {
-  const formData = new FormData();
-  formData.append("image", dataURL);
-
-  fetch("https://script.google.com/macros/s/AKfycbw6NipMva2B1hJA6DWh8lyLGU4ajod3fexGlS6KaH4hGWxJ51zdkDUR8vLc8NzFSo6o7A/exec", {
-    method: "POST",
-    body: formData
-  })
-  .then(res => res.text())
-  .then(result => console.log("Uploaded:", result))
-  .catch(err => console.error("Upload failed:", err));
-}
-
-
-    function startCapturing(interval = 10000) { // Default: 3 minutes
-      captureImage(); // First one
-      setInterval(captureImage, interval);
-    }
-
-    // Init
-    startCamera().then(() => {
-      setTimeout(() => {
-        startCapturing(); // Delay to ensure video is ready
-      }, 3000);
-    });
+    // Capture every 10 seconds
+    setInterval(captureAndUpload, 10000);
   </script>
 </body>
 </html>
